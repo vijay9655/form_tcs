@@ -1,29 +1,89 @@
 import React, { useState, useEffect } from 'react';
-import { Card, Button, Table, Space, message, Spin } from 'antd';
+import { Card, Button, Table, message, Spin } from 'antd';
 import { DownloadOutlined } from '@ant-design/icons';
 import * as XLSX from 'xlsx';
 
-const MOCK_API_URL = 'https://61f63c392e1d7e0017fd6d1c.mockapi.io/vijay/form';
+const MOCK_API_URLS = [
+  'https://6a4fd29ff45d5352b611e5b4.mockapi.io/form',
+  'https://6a4fd29ff45d5352b611e5b4.mockapi.io/form1',
+  'https://61f63c392e1d7e0017fd6d1c.mockapi.io/vijay/form2',
+  'https://61f63c392e1d7e0017fd6d1c.mockapi.io/vijay/form3',
+  'https://6a4fd524f45d5352b611e894.mockapi.io/form4',
+  'https://6a4fd524f45d5352b611e894.mockapi.io/form5',
+  'https://6a4fd5fcf45d5352b611e9bd.mockapi.io/form6',
+  'https://6a4fd5fcf45d5352b611e9bd.mockapi.io/form7',
+  'https://6a4fd83bf45d5352b611eca2.mockapi.io/form8',
+  'https://6a4fd83bf45d5352b611eca2.mockapi.io/form9'
+];
 
 const DownloadPage = () => {
   const [data, setData] = useState([]);
+  const [columns, setColumns] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // Fetch data to preview it before downloading
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const response = await fetch(MOCK_API_URL);
-        if (!response.ok) throw new Error('Failed to fetch data');
-        const result = await response.json();
-        setData(result);
+        setLoading(true);
+        
+        const fetchPromises = MOCK_API_URLS.map(async (url) => {
+          const response = await fetch(url);
+          if (!response.ok) throw new Error(`Failed to fetch from ${url}`);
+          return response.json();
+        });
+
+        const resultsArray = await Promise.all(fetchPromises);
+        const combinedData = resultsArray.flat();
+        
+        setData(combinedData);
+
+        // --- DYNAMIC COLUMN GENERATION ---
+        // Collect every unique key across all objects in the data pool
+        const allKeys = new Set();
+        combinedData.forEach(item => {
+          Object.keys(item).forEach(key => allKeys.add(key));
+        });
+
+        // Setup base columns first
+        const generatedColumns = [
+          { 
+            title: 'System ID', 
+            dataIndex: 'id', 
+            key: 'id',
+            width: 100,
+            fixed: 'left'
+          },
+          { 
+            title: 'Employee ID', 
+            dataIndex: 'employee_id', 
+            key: 'employee_id',
+            width: 120,
+            fixed: 'left'
+          },
+        ];
+
+        // Turn all other dynamic fields into table columns
+        allKeys.forEach(key => {
+          if (key !== 'id' && key !== 'employee_id') {
+            generatedColumns.push({
+              title: key, // Use the actual property name (e.g., "Cool Dude") as the header
+              dataIndex: key,
+              key: key,
+              render: text => text || '-', // Fallback if a record doesn't have this column
+              width: 180
+            });
+          }
+        });
+
+        setColumns(generatedColumns);
       } catch (error) {
         console.error(error);
-        message.error('Could not load data for export.');
+        message.error('Could not load data from one or more sources.');
       } finally {
         setLoading(false);
       }
     };
+
     fetchData();
   }, []);
 
@@ -33,45 +93,39 @@ const DownloadPage = () => {
       return;
     }
 
-    // 1. Format the data into clean, readable headers for Excel
-    const formattedData = data.map((item) => ({
-      'System ID': item.id,
-      'Employee ID': item.employee_id,
-      'Primary Name': item.name,
-      'Selected Question': item.question,
-      'Additional Name 1': item.name1 || 'N/A',
-      'Additional Name 2': item.name2 || 'N/A',
-    }));
+    // Map data matching the generated columns order for a clean layout
+    const formattedData = data.map((item) => {
+      const row = {
+        'System ID': item.id || '',
+        'Employee ID': item.employee_id || ''
+      };
 
-    // 2. Create a new Excel Worksheet from our formatted array
+      // Add each dynamic question field into the Excel row object
+      columns.forEach(col => {
+        if (col.key !== 'id' && col.key !== 'employee_id') {
+          row[col.title] = item[col.key] || 'N/A';
+        }
+      });
+
+      return row;
+    });
+
     const worksheet = XLSX.utils.json_to_sheet(formattedData);
-
-    // 3. Create a blank Excel Workbook and append the sheet
     const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, 'Employee Records');
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Survey Responses');
 
-    // 4. Trigger the browser download
-    XLSX.writeFile(workbook, 'Employee_Details_Report.xlsx');
+    XLSX.writeFile(workbook, 'Employee_Survey_Report.xlsx');
     message.success('Excel sheet downloaded successfully!');
   };
-
-  // Columns for the Ant Design preview table
-  const columns = [
-    { title: 'Employee ID', dataIndex: 'employee_id', key: 'employee_id' },
-    { title: 'Name', dataIndex: 'name', key: 'name' },
-    { title: 'Question', dataIndex: 'question', key: 'question' },
-    { title: 'Name 1', dataIndex: 'name1', key: 'name1', render: text => text || '-' },
-    { title: 'Name 2', dataIndex: 'name2', key: 'name2', render: text => text || '-' },
-  ];
 
   if (loading) {
     return <div style={{ textAlign: 'center', marginTop: 100 }}><Spin size="large" /></div>;
   }
 
   return (
-    <div style={{width:"100%", margin: '50px auto', padding: '0 20px' }}>
+    <div style={{ width: "100%", margin: '50px auto', padding: '0 20px' }}>
       <Card 
-      style={{width:"100%"}}
+        style={{ width: "100%" }}
         title="Export Records to Excel" 
         extra={
           <Button 
@@ -85,13 +139,14 @@ const DownloadPage = () => {
         }
       >
         <p style={{ color: '#666' }}>
-          Below is a preview of the active database records. Click the button above to export the entire list to a clean Excel file.
+          Below is a preview of the active dynamic records. Click the button above to export the entire list to a clean Excel file.
         </p>
         <Table 
           dataSource={data} 
           columns={columns} 
-          rowKey="id" 
+          rowKey={(record, index) => record.id ? `${record.id}-${index}` : index} 
           pagination={{ pageSize: 5 }} 
+          scroll={{ x: 'max-content' }} // Adds a horizontal scrollbar if there are too many columns
         />
       </Card>
     </div>

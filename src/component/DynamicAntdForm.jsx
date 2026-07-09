@@ -33,7 +33,7 @@ const categoriesData = [
   { "id": 12, "category": "Anniyan / Ambi / Remo", "description": "Does many things at once (Multitasker)." }
 ];
 
-const employees = [
+const employees = ["Shakthima-2295691",
   "Hitesh Nageshwar-1382433", "Prabhu Tg-1695792", "Ratheesh V-578790", "Saranraj L.-2765768",
   "Jonathan B-2917119", "Karthikeyan R-1743719", "H Sonu-2829912", "Sakthivel.-2954950",
   "Kumaraguru Soundramourty-2157615", "Suresh Kumar P-2224439", "Nhithees M-2730817",
@@ -280,7 +280,7 @@ const DynamicAntdForm = () => {
   const employeeOptions = employees.map(emp => {
     const [name] = emp.split('-');
     return (
-      <Option key={emp} value={name.trim()}>
+      <Option key={emp} value={emp.replace('-', ' - ')}>
         {emp.replace('-', ' - ')}
       </Option>
     );
@@ -334,11 +334,11 @@ const DynamicAntdForm = () => {
         <div style={{ marginBottom: '24px', textAlign: 'left' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'nowrap' }}>
             <FileTextOutlined style={{ fontSize: 'clamp(20px, 4vw, 28px)', color: '#003a8c', flexShrink: 0 }} />
-            <h2 style={{ margin: 0, color: '#002140', fontWeight: 700, fontSize: 'clamp(16px, 3.5vw, 24px)', letterSpacing: '-0.5px', lineHeight: 1.3 }}>
+            <h1 style={{ margin: 0, color: '#002140', fontWeight: 700, fontSize: 'clamp(16px, 3.5vw, 24px)', letterSpacing: '-0.5px', lineHeight: 1.3 }}>
               Find The cast of our corporate story
-            </h2>
+            </h1>
           </div>
-            <p style={{ padding:"2% 0% 0% 5%",display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'nowrap' }}>*Every great story has characters Ours has 12.Tag your colleagues</p>
+            <p style={{ padding:"2% 0% 0% 5%",display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'nowrap' }}>Every great story has characters.<br/> Ours has 12.<br/>Tag your colleagues!!</p>
 
           <Divider style={{ margin: '16px 0 8px 0', borderColor: 'rgba(0, 58, 140, 0.15)' }} />
         </div>
@@ -480,7 +480,7 @@ const DynamicAntdForm = () => {
                 Clear
               </Button>
               <Button type="primary" htmlType="submit" size="large" loading={loading} className="responsive-btn primary-btn">
-                Submit Evaluation
+                Submit
               </Button>
             </div>
           </Form.Item>

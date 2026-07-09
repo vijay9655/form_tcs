@@ -1,9 +1,22 @@
 import React, { useState, useEffect } from 'react';
 import { Card, Table, Tag, Spin, Alert, Typography, Row, Col, Space, Badge } from 'antd';
-import { BarChartOutlined, TrophyOutlined, TeamOutlined, UserOutlined, ReloadOutlined, InfoCircleOutlined } from '@ant-design/icons';
+import { BarChartOutlined, TrophyOutlined, TeamOutlined, UserOutlined, ReloadOutlined, InfoCircleOutlined, WarningOutlined } from '@ant-design/icons';
 
 const { Title, Text } = Typography;
-const MOCK_API_URL = 'https://61f63c392e1d7e0017fd6d1c.mockapi.io/vijay/form';
+
+// Array of all survey source endpoints
+const MOCK_API_URLS = [
+  'https://6a4fd29ff45d5352b611e5b4.mockapi.io/form',
+  'https://6a4fd29ff45d5352b611e5b4.mockapi.io/form1',
+  'https://61f63c392e1d7e0017fd6d1c.mockapi.io/vijay/form2',
+  'https://61f63c392e1d7e0017fd6d1c.mockapi.io/vijay/form3',
+  'https://6a4fd524f45d5352b611e894.mockapi.io/form4',
+  'https://6a4fd524f45d5352b611e894.mockapi.io/form5',
+  'https://6a4fd5fcf45d5352b611e9bd.mockapi.io/form6',
+  'https://6a4fd5fcf45d5352b611e9bd.mockapi.io/form7',
+  'https://6a4fd83bf45d5352b611eca2.mockapi.io/form8',
+  'https://6a4fd83bf45d5352b611eca2.mockapi.io/form9'
+];
 
 const categoriesData = [
   { "id": 1, "category": "Punctual Paramasivam", "description": "Always on time." },
@@ -23,54 +36,78 @@ const categoriesData = [
 const SurveyResults = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [partialError, setPartialError] = useState(null);
   const [processedData, setProcessedData] = useState([]);
   const [totalSubmissions, setTotalSubmissions] = useState(0);
 
   const fetchAndProcessData = async () => {
     setLoading(true);
     setError(null);
+    setPartialError(null);
+    
     try {
-      const response = await fetch(MOCK_API_URL);
-      if (!response.ok) throw new Error('Failed to retrieve survey entries.');
-      const rawData = await response.json();
-      setTotalSubmissions(rawData.length);
+      // Map URLs into active fetch promises
+      const fetchPromises = MOCK_API_URLS.map(async (url) => {
+        const res = await fetch(url);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        return res.json();
+      });
 
-      // Process votes for each category
+      // Settle all endpoints concurrently
+      const results = await Promise.allSettled(fetchPromises);
+      
+      let mergedRawData = [];
+      let failedCount = 0;
+
+      results.forEach((result, index) => {
+        if (result.status === 'fulfilled' && Array.isArray(result.value)) {
+          mergedRawData = [...mergedRawData, ...result.value];
+        } else {
+          failedCount++;
+          console.error(`Failed to fetch from endpoint index ${index}:`, result.reason);
+        }
+      });
+
+      // Critical Error: If every single endpoint failed to download
+      if (failedCount === MOCK_API_URLS.length) {
+        throw new Error('All data streams failed to retrieve survey entries.');
+      }
+
+      // Partial Warning: Inform the user if some forms failed but others loaded fine
+      if (failedCount > 0) {
+        setPartialError(`${failedCount} of ${MOCK_API_URLS.length} survey sources failed to respond. Showing partial leaderboard analysis.`);
+      }
+
+      setTotalSubmissions(mergedRawData.length);
+
+      // Process aggregated responses across all combined endpoints
       const summary = categoriesData.map(cat => {
         const voteCounts = {};
         let totalCategoryVotes = 0;
 
-        // Filter responses belonging to this specific category loop
-        const categoryResponses = rawData.filter(row => row.question === cat.category);
+        mergedRawData.forEach(row => {
+          let voteValue = row[cat.category];
+          
+          if (voteValue) {
+            let normalizedName = voteValue.toString().trim();
+            // Regex to strip out user trailing ID attributes safely
+            normalizedName = normalizedName.replace(/\s*-\s*\d+$/g, '').trim();
 
-        categoryResponses.forEach(res => {
-          if (cat.type === "Duo") {
-            // Duo rule: register both voted entities together as pairs or independent units
-            const pairKey = `${res.name1} & ${res.name2}`;
-            // Simple backup if raw structural formats alternate
-            if (res.name1 && res.name2) {
-              voteCounts[pairKey] = (voteCounts[pairKey] || 0) + 1;
-              totalCategoryVotes++;
-            }
-          } else {
-            // Standard dynamic tracking
-            if (res.name) {
-              voteCounts[res.name] = (voteCounts[res.name] || 0) + 1;
-              totalCategoryVotes++;
-            }
+            voteCounts[normalizedName] = (voteCounts[normalizedName] || 0) + 1;
+            totalCategoryVotes++;
           }
         });
 
-        // Determine who has the maximum number of votes
+        // Track max leader items
         let maxVotes = 0;
         let leaders = [];
 
         Object.entries(voteCounts).forEach(([name, count]) => {
           if (count > maxVotes) {
             maxVotes = count;
-            leaders = [name]; // Reset with new sole leader
+            leaders = [name];
           } else if (count === maxVotes && maxVotes > 0) {
-            leaders.push(name); // Handle exact vote count matches (Ties)
+            leaders.push(name);
           }
         });
 
@@ -82,14 +119,14 @@ const SurveyResults = () => {
           type: cat.type || "Single",
           totalVotes: totalCategoryVotes,
           maxVotes: maxVotes,
-          leaders: leaders, // Array of strings (handles ties perfectly)
+          leaders: leaders, 
           allVotesBreakdown: voteCounts
         };
       });
 
       setProcessedData(summary);
     } catch (err) {
-      setError(err.message || 'Error occurred while loading analytics structural configurations.');
+      setError(err.message || 'An error occurred while consolidating response metrics.');
     } finally {
       setLoading(false);
     }
@@ -135,7 +172,7 @@ const SurveyResults = () => {
       key: 'leaders',
       render: (_, record) => {
         if (record.leaders.length === 0) {
-          return <Text type="secondary" italic>No votes logged yet</Text>;
+          return <Text type="secondary" italic>No users found</Text>;
         }
 
         const isTie = record.leaders.length > 1;
@@ -166,15 +203,6 @@ const SurveyResults = () => {
     },
   ];
 
-  if (loading) {
-    return (
-      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '80vh', flexDirection: 'column', gap: '16px' }}>
-        <Spin size="large" />
-        <Text type="secondary">Compiling real-time survey results metrics...</Text>
-      </div>
-    );
-  }
-
   return (
     <div style={{ background: '#f5f7fa', minHeight: '100vh', padding: 'clamp(16px, 4vw, 40px)' }}>
       <div style={{ maxWidth: 1200, margin: '0 auto' }}>
@@ -186,7 +214,7 @@ const SurveyResults = () => {
               <BarChartOutlined style={{ fontSize: '32px', color: '#1677ff' }} />
               <div>
                 <Title level={2} style={{ margin: 0 }}>Survey Metrics & Analytics Dashboard</Title>
-                <Text type="secondary">Real-time dynamic parsing of corporate peer recognition votes</Text>
+                <Text type="secondary">Consolidating peer recognition streams across multiple entry forms</Text>
               </div>
             </Space>
           </Col>
@@ -195,17 +223,19 @@ const SurveyResults = () => {
               <Tag color="blue" style={{ padding: '6px 12px', fontSize: '14px', fontWeight: 600 }}>
                 Total Submissions: {totalSubmissions}
               </Tag>
-              <Badge onClick={fetchAndProcessData} style={{ cursor: 'pointer' }}>
-                <Tag icon={<ReloadOutlined />} color="purple" style={{ padding: '6px 12px', fontSize: '14px', cursor: 'pointer' }}>
-                  Refresh Live Data
-                </Tag>
-              </Badge>
+              <Tag icon={<ReloadOutlined />} color="purple" style={{ padding: '6px 12px', fontSize: '14px', cursor: 'pointer' }} onClick={fetchAndProcessData}>
+                Refresh Live Data
+              </Tag>
             </Space>
           </Col>
         </Row>
 
         {error && (
           <Alert message="Data Stream Error" description={error} type="error" showIcon style={{ marginBottom: '20px' }} />
+        )}
+
+        {partialError && !error && (
+          <Alert message="Partial Connection Notice" description={partialError} type="warning" showIcon icon={<WarningOutlined />} style={{ marginBottom: '20px' }} />
         )}
 
         {/* Master Leaderboard Table */}
@@ -215,7 +245,7 @@ const SurveyResults = () => {
           title={
             <span style={{ fontWeight: 700, fontSize: '16px', color: '#002140' }}>
               <TrophyOutlined style={{ color: '#faad14', marginRight: '8px' }} /> 
-              Category Category Winners Overview
+              Category Winners Overview
             </span>
           }
         >
