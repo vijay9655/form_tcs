@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route, Link } from 'react-router-dom';
 import { Layout, Menu } from 'antd';
 import DownloadPage from './DownloadPage'; // Import the new download component
 import DynamicAntdForm from './component/DynamicAntdForm';
+import SurveyResults from './SurveyResults';
 
 const { Header, Content, Footer } = Layout;
 
@@ -37,6 +38,8 @@ const App = () => {
             {/* <Route path="/" element={<Home />} /> */}
             <Route path="/" element={<DynamicAntdForm />} />
             <Route path="/download" element={<DownloadPage />} />
+            <Route path="/survay" element={<SurveyResults />} />
+
           </Routes>
         
         
