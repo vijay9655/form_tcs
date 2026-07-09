@@ -69,8 +69,9 @@ const DownloadPage = () => {
   }
 
   return (
-    <div style={{ maxWidth: 800, margin: '50px auto', padding: '0 20px' }}>
+    <div style={{width:"100%", margin: '50px auto', padding: '0 20px' }}>
       <Card 
+      style={{width:"100%"}}
         title="Export Records to Excel" 
         extra={
           <Button 

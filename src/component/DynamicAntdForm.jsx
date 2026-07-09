@@ -6,13 +6,23 @@ import confetti from 'canvas-confetti';
 const { Option } = Select;
 const MOCK_API_URL = 'https://61f63c392e1d7e0017fd6d1c.mockapi.io/vijay/form';
 
+const TRIGGER_QUESTION_VALUES = [
+  "Punctuval Paramasivam", 
+  "question_2",
+  "vijay",
+  "alex",
+  "jordan",
+  "taylor",
+];
+
 const DynamicAntdForm = () => {
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
   const [isExistingUser, setIsExistingUser] = useState(false);
+  const [isSubmitted, setIsSubmitted] = useState(false);
 
   const watchedQuestion = Form.useWatch('question', form);
-  const TRIGGER_QUESTION_VALUE = 'question_2';
+  const isTriggerQuestion = TRIGGER_QUESTION_VALUES.includes(watchedQuestion);
 
   const fireConfetti = () => {
     const duration = 2 * 1000;
@@ -44,22 +54,20 @@ const DynamicAntdForm = () => {
         setIsExistingUser(true);
         message.error(`Verification Failed: ID ${values.employeeId} already registered.`);
       } else {
-        const postResponse = await fetch(MOCK_API_URL, {
+        await fetch(MOCK_API_URL, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             employee_id: Number(values.employeeId),
-            name: values.primaryName,
+            name: values.primaryName || null,
             question: values.question,
             name1: values.name1 || null,
             name2: values.name2 || null,
           }),
         });
 
-        if (!postResponse.ok) throw new Error('Submission error.');
-
         fireConfetti();
-        message.success('Evaluation submitted successfully to management systems!');
+        setIsSubmitted(true);
         form.resetFields();
       }
     } catch (error) {
@@ -67,6 +75,11 @@ const DynamicAntdForm = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleResetFormView = () => {
+    setIsSubmitted(false);
+    setIsExistingUser(false);
   };
 
   const searchSelectProps = {
@@ -94,9 +107,58 @@ const DynamicAntdForm = () => {
     );
   }
 
+  if (isSubmitted) {
+    return (
+      <div style={{ 
+        background: 'linear-gradient(135deg,#667eea 0%,#764ba2 50%,#6B73FF 100%)', 
+        minHeight: '100vh', 
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: '16px'
+      }}>
+        <Card
+          bordered={false}
+          style={{
+            width: "100%",
+            maxWidth: 600,
+            borderRadius: 24,
+            background: "rgba(255,255,255,0.95)",
+            backdropFilter: "blur(25px)",
+            boxShadow: "0 25px 80px rgba(0,0,0,0.18)",
+            textAlign: 'center',
+            padding: '20px 10px'
+          }}
+        >
+          <Result
+            status="success"
+            title={<span style={{ color: '#002140', fontWeight: 700 }}>Your response has been submitted successfully!</span>}
+            subTitle={
+              <div style={{ marginTop: '8px' }}>
+                <p style={{ fontSize: '18px', fontWeight: 600, color: '#52c41a', margin: '0 0 4px 0' }}>Thank you</p>
+                <p style={{ margin: 0, color: '#6d7a86' }}>Internal operations metrics records updated.</p>
+              </div>
+            }
+            extra={[
+              <Button 
+                type="primary" 
+                key="console" 
+                size="large"
+                onClick={handleResetFormView}
+                style={{ borderRadius: '8px', background: '#1677ff', fontWeight: 600 }}
+              >
+                Submit Another Response
+              </Button>
+            ]}
+          />
+        </Card>
+      </div>
+    );
+  }
+
   return (
     <div style={{ 
-      background: 'linear-gradient(135deg, #001529 0%, #002244 50%, #003a8c 100%)', 
+      background: 'linear-gradient(135deg,#667eea 0%,#764ba2 50%,#6B73FF 100%)', 
       minHeight: '100vh', 
       padding: 'clamp(16px, 4vw, 40px) 16px',
       fontFamily: 'Segoe UI, Roboto, Helvetica Neue, Arial',
@@ -104,35 +166,19 @@ const DynamicAntdForm = () => {
       alignItems: 'center',
       justifyContent: 'center'
     }}>
-      <Card 
+      <Card
         bordered={false}
-        style={{ 
-          width: '100%',
-          maxWidth: 650, 
-          borderRadius: '16px',
-          boxShadow: '0 12px 40px rgba(0, 0, 0, 0.3)',
-          overflow: 'hidden',
-          position: 'relative'
-        }}
-        styles={{ 
-          body: { 
-            padding: 'clamp(16px, 5vw, 32px)',
-            /* 
-              TCS Tech Design Theme:
-              Combines a crisp layout background grid with a smooth glowing blue structural flare 
-              in the top right corner to echo cloud/enterprise infrastructures.
-            */
-            backgroundImage: `
-              radial-gradient(circle at 90% 10%, rgba(0, 58, 140, 0.07) 0%, rgba(255, 255, 255, 0) 40%),
-              linear-gradient(rgba(240, 244, 248, 0.4) 1px, transparent 1px),
-              linear-gradient(90deg, rgba(240, 244, 248, 0.4) 1px, transparent 1px)
-            `,
-            backgroundSize: '100% 100%, 20px 20px, 20px 20px',
-            backgroundColor: '#ffffff'
-          } 
+        style={{
+          width: "100%",
+          maxWidth: 700,
+          borderRadius: 24,
+          background: "rgba(255,255,255,0.9)",
+          backdropFilter: "blur(25px)",
+          WebkitBackdropFilter: "blur(25px)",
+          boxShadow: "0 25px 80px rgba(0,0,0,0.18)",
+          border: "1px solid rgba(255,255,255,0.4)"
         }}
       >
-        {/* Header Block */}
         <div style={{ marginBottom: '24px', position: 'relative', zIndex: 1 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
             <FileTextOutlined style={{ fontSize: 'clamp(22px, 4vw, 28px)', color: '#003a8c' }} />
@@ -182,41 +228,39 @@ const DynamicAntdForm = () => {
           {/* Section 2: Question and Names */}
           <div>
             <h3 style={{ color: '#003a8c', fontSize: '15px', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <QuestionCircleOutlined /> Assessment Framework
+              <QuestionCircleOutlined /> Assessment :
             </h3>
 
             <Form.Item
               name="question"
-              label={<span style={{ fontWeight: 600 }}>Primary Evaluation Category</span>}
+              label={<span style={{ fontWeight: 600 }}>Select Category</span>}
               rules={[{ required: true, message: 'Category allocation mandatory.' }]}
             >
               <Select {...searchSelectProps} size="large" style={{ borderRadius: '6px', width: '100%' }}>
-                <Option value="question_1">Operational Milestone Analysis</Option>
-                <Option value="question_2">Team Lead & Peer Feedback (Requires sub-assignments)</Option>
-                <Option value="question_3">Workplace Culture Assessment</Option>
+                <Option value="Punctuval Paramasivam">Punctuval Paramasivam</Option>
+                <Option value="Kadala Muthu">Kadala Muthu</Option>
+                <Option value="Cool DUDE">Cool DUDE</Option>
               </Select>
             </Form.Item>
 
-            <Form.Item
-              name="primaryName"
-              label={<span style={{ fontWeight: 600 }}>Assigned Team Member</span>}
-              rules={[{ required: true, message: 'Profile reference selection mandatory.' }]}
-            >
-              <Select 
-                {...searchSelectProps} 
-                prefix={<UserOutlined />}
-                size="large"
-                style={{ width: '100%' }}
+            {!isTriggerQuestion && (  
+              <Form.Item
+                name="primaryName"
+                label={<span style={{ fontWeight: 600 }}>Assigned Team Member</span>}
+                rules={[{ required: true, message: 'Profile reference selection mandatory.' }]}
               >
-                <Option value="alex">Alex Mercer</Option>
-                <Option value="jordan">Jordan Vance</Option>
-                <Option value="taylor">Taylor Finch</Option>
-              </Select>
-            </Form.Item>
+                <Select {...searchSelectProps} prefix={<UserOutlined />} size="large" style={{ width: '100%' }}>
+                  <Option value="pragnitha">pragnitha</Option>
+                  <Option value="sakthima">sakthima</Option>
+                  <Option value="nivetha">nivetha</Option>
+                  <Option value="akilandeshwari">akilandeshwari</Option>
+                </Select>
+              </Form.Item>
+            )}
           </div>
 
-          {/* Section 3: Dynamic Contextual Area (Responsive Row/Col layout) */}
-          {watchedQuestion === TRIGGER_QUESTION_VALUE && (
+          {/* Section 3: Dynamic Contextual Area */}
+          {isTriggerQuestion && (
             <div style={{ 
               background: 'linear-gradient(135deg, #e6f7ff 0%, #f0f9ff 100%)', 
               padding: 'clamp(12px, 3vw, 20px)', 
@@ -238,24 +282,39 @@ const DynamicAntdForm = () => {
                 <Col xs={24} sm={12}>
                   <Form.Item
                     name="name1"
-                    label={<span style={{ fontWeight: 600, color: '#003a8c' }}>Peer Evaluator 1</span>}
+                    label={<span style={{ fontWeight: 600, color: '#003a8c' }}>Team Member 1</span>}
                     rules={[{ required: true, message: 'Required.' }]}
                   >
                     <Select {...searchSelectProps} size="large" style={{ width: '100%' }}>
-                      <Option value="option_a">Strategic Operations — Team Alpha</Option>
-                      <Option value="option_b">Technical Architecture — Team Beta</Option>
+                      <Option value="pragnitha">pragnitha</Option>
+                      <Option value="sakthima">sakthima</Option>
+                      <Option value="nivetha">nivetha</Option>
+                      <Option value="akilandeshwari">akilandeshwari</Option>
                     </Select>
                   </Form.Item>
                 </Col>
                 <Col xs={24} sm={12}>
                   <Form.Item
                     name="name2"
-                    label={<span style={{ fontWeight: 600, color: '#003a8c' }}>Peer Evaluator 2</span>}
-                    rules={[{ required: true, message: 'Required.' }]}
+                    label={<span style={{ fontWeight: 600, color: '#003a8c' }}>Team Member 2</span>}
+                    dependencies={['name1']} // Tells AntD to watch changes in 'name1'
+                    rules={[
+                      { required: true, message: 'Required.' },
+                      ({ getFieldValue }) => ({
+                        validator(_, value) {
+                          if (!value || getFieldValue('name1') !== value) {
+                            return Promise.resolve();
+                          }
+                          return Promise.reject(new Error('Team Member 1 and Team Member 2 cannot be the same person.'));
+                        },
+                      }),
+                    ]}
                   >
                     <Select {...searchSelectProps} size="large" style={{ width: '100%' }}>
-                      <Option value="option_x">Delivery Management — Node X</Option>
-                      <Option value="option_y">Quality Assurance — Node Y</Option>
+                      <Option value="pragnitha">pragnitha</Option>
+                      <Option value="sakthima">sakthima</Option>
+                      <Option value="nivetha">nivetha</Option>
+                      <Option value="akilandeshwari">akilandeshwari</Option>
                     </Select>
                   </Form.Item>
                 </Col>
@@ -265,52 +324,24 @@ const DynamicAntdForm = () => {
 
           <Divider style={{ margin: '24px 0', borderColor: 'rgba(0, 58, 140, 0.1)' }} />
 
-          {/* Action Execution Footer Buttons */}
           <Form.Item style={{ marginBottom: 0 }}>
-            <Space 
-              style={{ width: '100%', justifyContent: 'flex-end' }} 
-              size="middle"
-              className="form-action-space"
-            >
-              <Button 
-                htmlType="button" 
-                disabled={loading} 
-                onClick={() => form.resetFields()}
-                size="large"
-                style={{ borderRadius: '6px', minWidth: '100px' }}
-                className="responsive-btn"
-              >
+            <Space style={{ width: '100%', justifyContent: 'flex-end' }} size="middle" className="form-action-space">
+              <Button htmlType="button" disabled={loading} onClick={() => form.resetFields()} size="large" style={{ borderRadius: '6px', minWidth: '100px' }} className="responsive-btn">
                 Clear
               </Button>
-              <Button 
-                type="primary" 
-                htmlType="submit" 
-                loading={loading}
-                size="large"
-                style={{ borderRadius: '6px', background: '#003a8c', borderColor: '#003a8c', minWidth: '140px', fontWeight: 600 }}
-                className="responsive-btn"
-              >
-                Submit Metric
+              <Button type="primary" htmlType="submit" size="large" loading={loading} style={{ width: "100%", height: 50, borderRadius: 12, background: "linear-gradient(90deg,#1677ff,#69b1ff)", border: 0, fontWeight: 700, fontSize: 16 }}>
+                Submit Evaluation
               </Button>
             </Space>
           </Form.Item>
         </Form>
       </Card>
 
-      {/* Embedded style override snippet to handle extreme CSS edge cases on mobile view ports */}
       <style>{`
         @media (max-width: 480px) {
-          .form-action-space {
-            width: 100% !important;
-          }
-          .form-action-space .ant-space-item {
-            flex: 1;
-          }
-          .responsive-btn {
-            width: 100% !important;
-            min-width: unset !important;
-            text-align: center;
-          }
+          .form-action-space { width: 100% !important; }
+          .form-action-space .ant-space-item { flex: 1; }
+          .responsive-btn { width: 100% !important; min-width: unset !important; text-align: center; }
         }
       `}</style>
     </div>

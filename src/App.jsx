@@ -32,13 +32,13 @@ const App = () => {
           </Menu>
         </Header> */}
         
-        <Content style={{ padding: '0 50px' }}>
+       
           <Routes>
             {/* <Route path="/" element={<Home />} /> */}
             <Route path="/" element={<DynamicAntdForm />} />
             <Route path="/download" element={<DownloadPage />} />
           </Routes>
-        </Content>
+        
         
         <Footer style={{ textAlign: 'center' }}>Employee Registry ©2026</Footer>
       </Layout>

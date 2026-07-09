@@ -109,3 +109,12 @@ code {
   padding: 4px 8px;
   background: var(--code-bg);
 }
+.ant-card{
+width: 80%;
+}
+.ant-input:focus,
+.ant-select-focused .ant-select-selector,
+.ant-input-number-focused{
+border-color:#1677ff !important;
+box-shadow:0 0 0 4px rgba(22,119,255,.15) !important;
+}
