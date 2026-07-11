@@ -34,6 +34,7 @@ const categoriesData = [
 ];
 
 const employees = [
+  "Bharathi - 2784682",
   "V M ATHIRA-661753",
   "Shakthima-2295691",
   "Ch P S Seshu Sangeetha-1039152",
